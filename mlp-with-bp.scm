@@ -44,6 +44,7 @@
 
 
 ;; backpropagation
+;; http://www.cs.bham.ac.uk/~jxb/NN/l7.pdf
 
 (define (backpropagate-further previous-deltas weights propagation-results)
   (if (null? (cdr weights))
