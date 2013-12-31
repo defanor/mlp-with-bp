@@ -1,5 +1,6 @@
 (use srfi-1) ; chicken-scheme-specific import
 
+
 ;; MLP
 
 (define (logistic-function x)
@@ -46,20 +47,22 @@
 ;; backpropagation
 ;; http://www.cs.bham.ac.uk/~jxb/NN/l7.pdf
 
-(define (backpropagate-further previous-deltas weights propagation-results)
-  (if (null? (cdr weights))
+(define (backpropagate-further previous-deltas weights propagation-results afd)
+  (if (null? weights)
       previous-deltas
       (let* ((propagation-result (car propagation-results))
              (propagation-result-neuron-inputs (car propagation-result))
              (previous-delta (car previous-deltas))
              (weighted-sum-for-delta (prepare-inputs (propagate-through-weights previous-delta
-                                                                                (cadr weights))))
-             (current-delta (map *
-                                 weighted-sum-for-delta
-                                 propagation-result-neuron-inputs)))
+                                                                                (car weights))))
+             (current-delta (map  (lambda (ws in)
+                                    (* ws (afd in)))
+                                  weighted-sum-for-delta
+                                  propagation-result-neuron-inputs)))
         (backpropagate-further (cons current-delta previous-deltas)
                                (cdr weights)
-                               (cdr propagation-results)))))
+                               (cdr propagation-results)
+                               afd))))
 
 (define (calculate-weight-deltas deltas propagation-result learning-rate)
   (map (lambda (layer-deltas layer-propagation-result)
@@ -87,8 +90,9 @@
                                   output-layer-outputs
                                   output-layer-inputs))
          (all-deltas (backpropagate-further (list output-layer-delta)
-                                            (reverse weights)
-                                            reverse-propagation-result))
+                                            (cdr (reverse weights))
+                                            reverse-propagation-result
+                                            afd))
          (weight-deltas (calculate-weight-deltas all-deltas propagation-result learning-rate))
          (new-weights (map (lambda (weight-layer delta-layer)
                              (map (lambda (w d)
@@ -96,19 +100,8 @@
                                   weight-layer
                                   delta-layer))
                            weights
-                           weight-deltas))
-         ;; there's virtually no difference for sigmoids if value is like 1000 or 1e1000,
-         ;; but we are getting +/-inf.0 and then +/-nan.0 if numbers are too big
-         (corrected-weights (map (lambda (weight-layer)
-                                   (map (lambda (weight)
-                                          (map (lambda (w)
-                                                 (cond ((> w 1000) 1000)
-                                                       ((< w -1000) -1000)
-                                                       (else w)))
-                                               weight))
-                                        weight-layer))
-                                 new-weights)))
-    corrected-weights))
+                           weight-deltas)))
+    new-weights))
 
 
 ;; helper functions
@@ -142,10 +135,29 @@
              learning-rate
              (- n 1))))
 
+(define (init-weights layers)
+  (if (or (null? layers)
+          (null? (cdr layers)))
+      '()
+      (cons (make-list* (car layers)
+                        (lambda () (make-list* (cadr layers)
+                                          (lambda () (/ (random 42)
+                                                   (+ 42 (random 42))))
+                                          '()))
+                        '())
+            (init-weights (cdr layers)))))
+
+(define (make-list* n thunk result)
+  (if (> n 0)
+      (make-list* (- n 1)
+                  thunk
+                  (cons (thunk) result))
+      result))
+
+
 ;; test
 
-(define init '(((0.3 0.5 0.8) (0.44 0.3 0.2))
-               ((0.7) (0.8) (0.5))))
+(define init (init-weights '(2 3 1)))
 
 (define trained-xor (train init
                            '((0 0) (0 1) (1 0) (1 1))
@@ -167,3 +179,4 @@
 (propagate-final trained-xor
                  '(1 1)
                  tanh)
+
