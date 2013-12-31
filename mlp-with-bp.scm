@@ -52,13 +52,14 @@
       previous-deltas
       (let* ((propagation-result (car propagation-results))
              (propagation-result-neuron-inputs (car propagation-result))
+             (propagation-result-neuron-outputs (cadr propagation-result))
              (previous-delta (car previous-deltas))
              (weighted-sum-for-delta (prepare-inputs (propagate-through-weights previous-delta
                                                                                 (car weights))))
              (current-delta (map  (lambda (ws in)
                                     (* ws (afd in)))
                                   weighted-sum-for-delta
-                                  propagation-result-neuron-inputs)))
+                                  propagation-result-neuron-outputs)))
         (backpropagate-further (cons current-delta previous-deltas)
                                (cdr weights)
                                (cdr propagation-results)
@@ -91,7 +92,7 @@
                                   output-layer-inputs))
          (all-deltas (backpropagate-further (list output-layer-delta)
                                             (cdr (reverse weights))
-                                            reverse-propagation-result
+                                            (cdr reverse-propagation-result)
                                             afd))
          (weight-deltas (calculate-weight-deltas all-deltas propagation-result learning-rate))
          (new-weights (map (lambda (weight-layer delta-layer)
@@ -157,15 +158,15 @@
 
 ;; test
 
-(define init (init-weights '(2 3 1)))
+(define init (init-weights '(2 3 3 1)))
 
 (define trained-xor (train init
                            '((0 0) (0 1) (1 0) (1 1))
                            '((0) (1) (1) (0))
                            tanh
                            tanh-derivative
-                           0.1
-                           20000))
+                           0.3
+                           22000))
 
 (propagate-final trained-xor
                  '(0 0)
@@ -179,4 +180,3 @@
 (propagate-final trained-xor
                  '(1 1)
                  tanh)
-
