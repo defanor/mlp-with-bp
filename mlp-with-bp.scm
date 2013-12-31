@@ -47,19 +47,31 @@
 ;; backpropagation
 ;; http://www.cs.bham.ac.uk/~jxb/NN/l7.pdf
 
+(define (propagate-through-weights-backwards deltas weights)
+  (map (lambda (weight-set)
+         (map (lambda (delta weight)
+                (* weight delta))
+              deltas
+              weight-set))
+       weights))
+
 (define (backpropagate-further previous-deltas weights propagation-results afd)
-  (if (null? weights)
+  (if (null? (cdr weights))
       previous-deltas
       (let* ((propagation-result (car propagation-results))
              (propagation-result-neuron-inputs (car propagation-result))
              (propagation-result-neuron-outputs (cadr propagation-result))
-             (previous-delta (car previous-deltas))
-             (weighted-sum-for-delta (prepare-inputs (propagate-through-weights previous-delta
-                                                                                (car weights))))
-             (current-delta (map  (lambda (ws in)
-                                    (* ws (afd in)))
-                                  weighted-sum-for-delta
-                                  propagation-result-neuron-inputs)))
+             (propagation-result-next-inputs (cadddr propagation-result))
+             (next-layer-delta (car previous-deltas))
+             (weights-between-current-and-next-layer (car weights))
+             (weighted-sum-for-delta
+              (map (lambda (x) (apply + x))
+                   (propagate-through-weights-backwards next-layer-delta
+                                                        weights-between-current-and-next-layer)))
+             (current-delta (map (lambda (ws in)
+                                   (* ws (afd in)))
+                                 weighted-sum-for-delta
+                                 propagation-result-neuron-inputs)))
         (backpropagate-further (cons current-delta previous-deltas)
                                (cdr weights)
                                (cdr propagation-results)
@@ -91,7 +103,7 @@
                                   output-layer-outputs
                                   output-layer-inputs))
          (all-deltas (backpropagate-further (list output-layer-delta)
-                                            (cdr (reverse weights))
+                                            (reverse weights)
                                             reverse-propagation-result
                                             afd))
          (weight-deltas (calculate-weight-deltas all-deltas propagation-result learning-rate))
@@ -167,7 +179,7 @@
                            tanh
                            tanh-derivative
                            0.2
-                           10000))
+                           400))
 
 (propagate-final trained-xor
                  '(0 0)
@@ -181,3 +193,4 @@
 (propagate-final trained-xor
                  '(1 1)
                  tanh)
+
