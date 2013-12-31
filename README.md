@@ -5,11 +5,6 @@ Simple multilayer perceptron with backpropagation learning algorithm implementat
 Tried to make it verbose and readable.
 
 
-Caution
--------
-Work in progress, this version is not correct yet.
-
-
 Would be nice to do
 -------------------
 1. Test everything, find bugs, fix them;
