@@ -59,7 +59,7 @@
              (current-delta (map  (lambda (ws in)
                                     (* ws (afd in)))
                                   weighted-sum-for-delta
-                                  propagation-result-neuron-outputs)))
+                                  propagation-result-neuron-inputs)))
         (backpropagate-further (cons current-delta previous-deltas)
                                (cdr weights)
                                (cdr propagation-results)
@@ -92,7 +92,7 @@
                                   output-layer-inputs))
          (all-deltas (backpropagate-further (list output-layer-delta)
                                             (cdr (reverse weights))
-                                            (cdr reverse-propagation-result)
+                                            reverse-propagation-result
                                             afd))
          (weight-deltas (calculate-weight-deltas all-deltas propagation-result learning-rate))
          (new-weights (map (lambda (weight-layer delta-layer)
@@ -142,8 +142,9 @@
       '()
       (cons (make-list* (car layers)
                         (lambda () (make-list* (cadr layers)
-                                          (lambda () (/ (random 42)
-                                                   (+ 42 (random 42))))
+                                          (lambda () (- (/ (random 420)
+                                                      (+ 420 (random 420)))
+                                                   0.5))
                                           '()))
                         '())
             (init-weights (cdr layers)))))
@@ -158,15 +159,15 @@
 
 ;; test
 
-(define init (init-weights '(2 3 3 1)))
+(define init (init-weights '(2 3 1)))
 
 (define trained-xor (train init
                            '((0 0) (0 1) (1 0) (1 1))
                            '((0) (1) (1) (0))
                            tanh
                            tanh-derivative
-                           0.3
-                           22000))
+                           0.2
+                           10000))
 
 (propagate-final trained-xor
                  '(0 0)
